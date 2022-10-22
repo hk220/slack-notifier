@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/hk220/slack-sender/config"
 	"github.com/hk220/slack-sender/converter"
 	"github.com/hk220/slack-sender/reader"
 	"github.com/hk220/slack-sender/sender"
@@ -15,13 +14,12 @@ type SendCommand struct {
 	Converter converter.Converter
 }
 
-func NewSendCommand(config *config.Config) *SendCommand {
-	ss := &SendCommand{
-		Sender:    sender.NewSlackSender(config.Token),
-		Reader:    reader.NewStdinReader(),
-		Converter: converter.NewSlackConverter(config.Username, config.Channel),
+func NewSendCommand(s sender.Sender, r reader.Reader, c converter.Converter) *SendCommand {
+	return &SendCommand{
+		Sender:    s,
+		Reader:    r,
+		Converter: c,
 	}
-	return ss
 }
 
 func (ss *SendCommand) Execute() error {
@@ -41,15 +39,14 @@ var sendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Send message to slack from stdin",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := &config.Config{
-			Token:    viper.GetString("token"),
-			Channel:  viper.GetString("channel"),
-			Username: viper.GetString("username"),
-		}
 
-		SendCommand := NewSendCommand(config)
+		s := sender.NewSlackSender(viper.GetString("token"))
+		r := reader.NewStdinReader()
+		c := converter.NewSlackConverter(viper.GetString("username"), viper.GetString("channel"))
 
-		if err := SendCommand.Execute(); err != nil {
+		sc := NewSendCommand(s, r, c)
+
+		if err := sc.Execute(); err != nil {
 			return err
 		}
 		return nil
