@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/hk220/slack-sender/converter"
 	"github.com/hk220/slack-sender/reader"
 	"github.com/hk220/slack-sender/sender"
@@ -57,7 +59,7 @@ func Execute() error {
 }
 
 func init() {
-	cobra.OnInitialize()
+	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "slack-sender.toml", "config file")
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
@@ -68,4 +70,20 @@ func init() {
 	viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("token"))
 	viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username"))
 	viper.BindPFlag("channel", rootCmd.PersistentFlags().Lookup("channel"))
+}
+
+func initConfig() {
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		home, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+
+		viper.AddConfigPath(home)
+		viper.SetConfigType("toml")
+		viper.SetConfigName(".slack-sender")
+	}
+
+	err := viper.ReadInConfig()
+	cobra.CheckErr(err)
 }
