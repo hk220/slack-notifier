@@ -1,4 +1,4 @@
-module github.com/hk220/slack-sender
+module github.com/hk220/slack-notifier
 
 go 1.18
 

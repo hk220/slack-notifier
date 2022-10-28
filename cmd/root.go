@@ -3,9 +3,9 @@ package cmd
 import (
 	"os"
 
-	"github.com/hk220/slack-sender/converter"
-	"github.com/hk220/slack-sender/reader"
-	"github.com/hk220/slack-sender/sender"
+	"github.com/hk220/slack-notifier/converter"
+	"github.com/hk220/slack-notifier/notifier"
+	"github.com/hk220/slack-notifier/reader"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -14,13 +14,13 @@ var (
 	cfgFile string
 
 	rootCmd = &cobra.Command{
-		Use: "slack-sender",
+		Use: "slack-notifier",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s := sender.NewSlackSender(viper.GetString("token"))
+			n := notifier.NewSlackNotifier(viper.GetString("token"))
 			r := reader.NewStdinReader()
 			c := converter.NewSlackConverter(viper.GetString("username"), viper.GetString("channel"))
 
-			sc := NewSendCommand(s, r, c)
+			sc := NewNotifyCommand(n, r, c)
 
 			return sc.Execute()
 		},
@@ -28,14 +28,14 @@ var (
 )
 
 type SendCommand struct {
-	Sender    sender.Sender
+	Notifier  notifier.Notifier
 	Reader    reader.Reader
 	Converter converter.Converter
 }
 
-func NewSendCommand(s sender.Sender, r reader.Reader, c converter.Converter) *SendCommand {
+func NewNotifyCommand(n notifier.Notifier, r reader.Reader, c converter.Converter) *SendCommand {
 	return &SendCommand{
-		Sender:    s,
+		Notifier:  n,
 		Reader:    r,
 		Converter: c,
 	}
@@ -48,7 +48,7 @@ func (ss *SendCommand) Execute() error {
 	}
 
 	msg := ss.Converter.Convert(text)
-	if err := ss.Sender.Send(msg); err != nil {
+	if err := ss.Notifier.Notify(msg); err != nil {
 		return err
 	}
 	return nil
@@ -61,7 +61,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "slack-sender.toml", "config file")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "slack-notifier.toml", "config file")
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 
 	rootCmd.PersistentFlags().String("token", "", "token")
@@ -81,7 +81,7 @@ func initConfig() {
 
 		viper.AddConfigPath(home)
 		viper.SetConfigType("toml")
-		viper.SetConfigName(".slack-sender")
+		viper.SetConfigName(".slack-notifier")
 	}
 
 	err := viper.ReadInConfig()
